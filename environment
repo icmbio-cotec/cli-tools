@@ -1,0 +1,312 @@
+#!/usr/bin/env bash
+clear;
+tabs 4;
+
+if [ $SUDO_USER ]; then
+    work_user=$SUDO_USER;
+else
+    work_user=`whoami`;
+fi
+
+# flag: esta rodando num processo builder
+in_builder_process=0
+
+apache_user="www-data"
+apache_vhost_dir="/etc/apache2/sites-available"
+apache_document_root=""
+
+###
+T_VERSION="0.0.1"
+
+function header() {
+
+    echo
+    echo -e "\033[1;34m |- - - - - - - - - - - - - - - - - - - - - - - - - - - - - |\033[0m"
+    echo -e "\033[1;34m |              ~[ Montador de ambiente web ]~              |\033[0m"
+    echo -e "\033[1;34m | Autor: J. Augusto <augustowebd@gmail.com>                |\033[0m"
+    echo -e "\033[1;34m | Version: 0.0.1                                           |\033[0m"
+    echo -e "\033[1;34m |- - - - - - - - - - - - - - - - - - - - - - - - - - - - - |\033[0m"
+
+}
+
+function yesno () {
+
+    echo -e -n "\033[1;33m $1 \033[0m"
+
+    while read -e answer; do
+        if [[ $answer = [sSyYnN] ]]; then
+            [[ $answer = [sSyY] ]] && retval=0
+            [[ $answer = [nN]   ]] && retval=1
+            break
+        fi
+    done
+
+    return $retval
+}
+
+function abort () {
+
+    echo
+        echo -e " \033[41;1;37m ERROR[$1]: $2\033[0m"
+    echo
+    exit 1
+}
+
+function rootRequired () {
+    if [ "$(id -u)" != "0" ] ; then
+        abort "BUILDER" "Para esta funcionalidade é necessário privilégios de superusuário"
+    fi
+}
+
+# manipulacao de SVN
+function doSvn () {
+
+    # monta cabecalho
+    header
+
+    # faz a leitura dos dados de acesso
+    echo -e "\033[1;33m | Recuperando informações de acesso ao repositóio(SVN):    |\033[0m"
+    echo -e "\033[1;34m |- - - - - - - - - - - - - - - - - - - - - - - - - - - - - |\033[0m"
+
+    echo -n "-> informe a url do repositorio svn: ";
+    read svn_repository;
+
+    echo -n "-> informe o usuario svn: ";
+    read svn_user;
+
+    echo "-> informe a senha svn: ";
+    read -s svn_passwd;
+
+    echo -n "-> informe a pasta destino (onde será armazenado os arquivos): ";
+    read svn_target;
+
+    echo -e "\033[0;32m- Confirmação dos dados de acesso:  \033[0m"
+    echo -e "\033[0;36m|->  URL SVN................:\033[0m $svn_repository"
+    echo -e "\033[0;36m|->  Usuário SVN............:\033[0m $svn_user"
+    echo -e "\033[0;36m|->  Diretório local destino:\033[0m $svn_target"
+
+    if yesno "Os dados estão corretos (s/n)"; then
+        svn checkout --username $svn_user --password $svn_passwd $svn_repository $svn_target
+
+        if [ "$?" != "0" ]; then
+            abort "SNV" "Não foi possível efetuar o checkout do do projeto."
+        fi;
+
+        chown $work_user:$apache_user $svn_target -R
+        if [ "$?" != "0" ]; then
+            abort "ENV" "Não foi possível alterar dono da pasta"
+        fi;
+
+        chmod 775 $svn_target -R
+        if [ "$?" != "0" ]; then
+            abort "ENV" "Não foi possível atribuir permissão"
+        fi;
+
+        return $?
+    fi;
+
+    # faz a correcao dos dados
+    doSvn
+}
+
+function doGetApacheUser () {
+    clear
+    header
+    # faz a leitura dos dados de acesso
+    echo -e "\033[1;33m | Recuperando o nome do usuário que executa o Apache       |\033[0m"
+    echo -e "\033[1;34m |- - - - - - - - - - - - - - - - - - - - - - - - - - - - - |\033[0m"
+
+    # recupera do apache
+    apache_user=$(ps -ef | grep apache | grep -v `whoami` | grep -v root | head -n1 | awk '{print $1}')
+
+    read -e -p " > Confime o usuário do apache: " -i $apache_user apache_user;
+}
+
+function doDomain () {
+    ## limpa a tela (dan!)
+    clear
+
+    # executa apenas se o root estiver executado o script
+    rootRequired
+
+    # recupera o IP ativo
+    url_ip=$(ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1 -d'/')
+
+    # @todo criar uma function para erro
+    if [ "$url_ip" == "" ]; then
+        abort "ENV" "Endereço IP não entrado."
+    fi
+
+    echo $url_ip
+
+    # mostra o cabecalho do programa
+    header
+
+    # completa o cabecalho incluindo info de dominio
+    echo -e "\033[1;33m | Configurando domínio                                     |\033[0m"
+    echo -e "\033[1;34m |- - - - - - - - - - - - - - - - - - - - - - - - - - - - - |\033[0m"
+
+    echo -n "-> informe o domínio da aplicação (sem http|s): ";
+    read url_dominio;
+
+    yesno "deseja associar seu ip corrente ao domínio? (s/n)" $url_ip;
+    if [ "$?" != "0" ]; then
+        echo -n "-> informe o endeço IP que sera associado ao domínio: "
+        read url_ip
+    fi
+
+    echo -e "\033[0;32m- Confirmação dos dados de domínio:  \033[0m"
+    echo -e "\033[0;36m|->  URL Domínio...............:\033[0m $url_dominio"
+    echo -e "\033[0;36m|->  URL IP....................:\033[0m $url_ip"
+
+    yesno "O domínio está correto (s/n)"
+
+    if [ "$?" != "0" ]; then
+        doDomain
+    fi;
+
+    # para efeito de testes, descomente a proxima e comente a subsequente
+    # echo -e " \033[41;1;37m @TODO: $2\033[0m Descomentar inclusao no host"
+    echo -e "$url_ip\t\t$url_dominio" >> /etc/hosts
+
+   return $?
+}
+
+function doVirtualhostTemplate ()
+{
+    VHTemplate="<VirtualHost *:80>\n"
+    VHTemplate="$VHTemplate\tServerName $url_dominio\n"
+    VHTemplate="$VHTemplate\tDocumentRoot $apache_document_root\n"
+    VHTemplate="$VHTemplate\tErrorLog  /var/log/apache2/$url_dominio.error.log\n"
+    VHTemplate="$VHTemplate\tCustomLog /var/log/apache2/$url_dominio.log combined\n"
+    VHTemplate="$VHTemplate"
+    VHTemplate="$VHTemplate\tSetEnv APPLICATION_ENV \"development\"\n"
+    VHTemplate="$VHTemplate"
+    VHTemplate="$VHTemplate\t\t<Directory $apache_document_root>\n"
+    VHTemplate="$VHTemplate\t\t\tOptions Indexes FollowSymLinks MultiViews\n"
+    VHTemplate="$VHTemplate\t\t\tAllowOverride All\n"
+    VHTemplate="$VHTemplate\t\t\tOrder deny,allow\n"
+    VHTemplate="$VHTemplate\t\t\tallow from all\n"
+    VHTemplate="$VHTemplate\t</Directory>\n"
+    VHTemplate="$VHTemplate</VirtualHost>"
+}
+
+function doVirtualhost () {
+
+    # mostra o cabecalho do programa
+    header
+
+    # completa o cabecalho incluindo info de dominio
+    echo -e "\033[1;33m | Configurando virtual-host                                |\033[0m"
+    echo -e "\033[1;34m |- - - - - - - - - - - - - - - - - - - - - - - - - - - - - |\033[0m"
+
+    # recupera o caminho de armazenamento dos virtuais-hosts
+    defaultPath=$apache_vhost_dir
+    read -e -p "Onde deseja armazenar os virtuais-hosts? " -i $defaultPath apache_vhost_dir
+
+    # recupera o cominho da pasta publica do site
+    read -e -p "-> informe o caminho da pasta pública do site: " -i $svn_target apache_document_root
+
+    if [ "$in_builder_process" == "0" ]; then
+        # recupera as informacoes de dominio
+        doDomain
+    fi;
+
+    # modelo de virtual host
+    doVirtualhostTemplate
+
+    # cria virtual host na pasta do apache
+    echo -e $VHTemplate "$apache_vhost_dir" >> "$apache_vhost_dir/$url_dominio.conf"
+
+    # habilita o virtual-host
+    a2ensite "$url_dominio.conf"
+
+    return $?
+}
+
+function doHelp () {
+    echo "Uso: `basename $0` <-hsdvb>"
+    echo "h : Esta ajuda"
+    echo "s : Manipulação de svn"
+    echo "d : manipulação de domínio"
+    echo "v : Manipulação de virtual-host"
+    echo "b : Constroi o ambiente de desenvolvimento"
+    exit 1
+}
+
+function doBuilder () {
+
+    # sinaliza que o processo a ser executado eh um builder completo
+    in_builder_process=1
+
+    # esta funcionalidade so possivel por meio do root
+    rootRequired
+
+    # recupera o usuario do apache
+    doGetApacheUser
+
+    # SVN: efetua o checkout do projeto
+    doSvn
+
+    if [ "$?" != "0" ]; then
+        abort "SNV" "Não foi possível efetuar o checkout do do projeto."
+    fi;
+
+    # DNS: incluir o registro do dominio
+    doDomain
+
+
+    if [ "$?" != "0" ]; then
+        abort "DNS" "Não foi possível definir o domínio do projeto."
+    fi;
+
+    # APACHE: cria o virtual-host
+    doVirtualhost
+
+    if [ "$?" != "0" ]; then
+        abort "APACHE" "Não foi possível criar o virtual-host."
+    fi;
+
+    # APACHE: reinicia o apache para
+    apachectl restart
+
+    if [ "$?" != "0" ]; then
+        abort "APACHE" "Não foi possível reiniciar o apache."
+    fi;
+
+    echo -e "\033[42;1;37m Processo finalizado com sucesso  \033[0m"
+    echo -e "\033[42;1;37m Em seu navegador, digite: $url_dominio\033[0m"
+
+    exit 0
+}
+
+# h : ajuda
+# s : svn = efetua o checkout do svn
+#     - u: update
+#     - c: checkout
+#     - e: export
+# d : domin         = criar dominio (dns)
+# v : virtual-host  = criar o virtual host (apache)
+#     - c: create
+#     - e: enable
+#     - d: disable
+# b : builder       = efetuar todos os passos necessarios para criar o ambiente
+while getopts "hsdvb" OPTION
+do
+    case $OPTION in
+        h) doHelp
+            ;;
+        s) doSvn
+            ;;
+        d) doDomain
+            ;;
+        v) doVirtualhost
+            ;;
+        b) doBuilder
+            ;;
+        ?) doHelp
+            ;;
+    esac
+done
+
+doHelp
