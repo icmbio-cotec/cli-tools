@@ -160,14 +160,14 @@ function usage ()
     $color = new Colors();
     echo chr(27)."[H".chr(27)."[2J";
     echo $color->getColoredString("  SIAL Create Module - Vs 0.0.1                                                                                                          \n", "cyan",   constant('BG_COLOR_DEFAULT'));
-    echo $color->getColoredString("    usage: create_module create system=system_name --module=module_name --param=full  --viewtype=html --persisttype=database  | to create all parts of module \n", constant('FG_COLOR_DEFAULT'), constant('BG_COLOR_DEFAULT'));
-    echo $color->getColoredString("    usage: create_module create system=system_name --module=module_name --param=mvcb  --viewtype=html --persisttype=database  | to create only mvcb           \n", constant('FG_COLOR_DEFAULT'), constant('BG_COLOR_DEFAULT'));
-    echo $color->getColoredString("    usage: create_module create system=system_name --module=module_name --param=model                                         | to create only model          \n", constant('FG_COLOR_DEFAULT'), constant('BG_COLOR_DEFAULT'));
-    echo $color->getColoredString("    usage: create_module create system=system_name --module=module_name --param=view  --viewtype=html                         | to create only view           \n", constant('FG_COLOR_DEFAULT'), constant('BG_COLOR_DEFAULT'));
-    echo $color->getColoredString("    usage: create_module create system=system_name --module=module_name --param=controller                                    | to create only controller     \n", constant('FG_COLOR_DEFAULT'), constant('BG_COLOR_DEFAULT'));
-    echo $color->getColoredString("    usage: create_module create system=system_name --module=module_name --param=business                                      | to create only business       \n", constant('FG_COLOR_DEFAULT'), constant('BG_COLOR_DEFAULT'));
-    echo $color->getColoredString("    usage: create_module create system=system_name --module=module_name --param=persist   --persisttype=database              | to create only persist        \n", constant('FG_COLOR_DEFAULT'), constant('BG_COLOR_DEFAULT'));
-    echo $color->getColoredString("    usage: create_module create system=system_name --module=module_name --param=valueObject                                   | to create only valueObject    \n", constant('FG_COLOR_DEFAULT'), constant('BG_COLOR_DEFAULT'));
+    echo $color->getColoredString("    usage: create_module create --system=system_name --module=module_name --param=full  --viewtype=html --persisttype=database  | to create all parts of module \n", constant('FG_COLOR_DEFAULT'), constant('BG_COLOR_DEFAULT'));
+    echo $color->getColoredString("    usage: create_module create --system=system_name --module=module_name --param=mvcb  --viewtype=html --persisttype=database  | to create only mvcb           \n", constant('FG_COLOR_DEFAULT'), constant('BG_COLOR_DEFAULT'));
+    echo $color->getColoredString("    usage: create_module create --system=system_name --module=module_name --param=model                                         | to create only model          \n", constant('FG_COLOR_DEFAULT'), constant('BG_COLOR_DEFAULT'));
+    echo $color->getColoredString("    usage: create_module create --system=system_name --module=module_name --param=view  --viewtype=html                         | to create only view           \n", constant('FG_COLOR_DEFAULT'), constant('BG_COLOR_DEFAULT'));
+    echo $color->getColoredString("    usage: create_module create --system=system_name --module=module_name --param=controller                                    | to create only controller     \n", constant('FG_COLOR_DEFAULT'), constant('BG_COLOR_DEFAULT'));
+    echo $color->getColoredString("    usage: create_module create --system=system_name --module=module_name --param=business                                      | to create only business       \n", constant('FG_COLOR_DEFAULT'), constant('BG_COLOR_DEFAULT'));
+    echo $color->getColoredString("    usage: create_module create --system=system_name --module=module_name --param=persist   --persisttype=database              | to create only persist        \n", constant('FG_COLOR_DEFAULT'), constant('BG_COLOR_DEFAULT'));
+    echo $color->getColoredString("    usage: create_module create --system=system_name --module=module_name --param=valueObject                                   | to create only valueObject    \n", constant('FG_COLOR_DEFAULT'), constant('BG_COLOR_DEFAULT'));
 }
 
 function print_error ($message)
