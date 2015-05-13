@@ -2,55 +2,56 @@
 
 var colors = require('colors');
 
-process.stdout.write( ('\nAdiciona um Atom Package fora do ' + 'apm'.red + '\n').bold );
+process.stdout.write(('\nAdiciona um Atom Package fora do ' + 'apm'.red + '\n').bold);
 
-var fail = function(text) {
+var fail = function (text) {
+    'use strict';
+
     process.stderr.write(('\n' + text + '\n').red);
     process.exit(1);
 };
 
-var args = process.argv;
-
 var read = require('read');
 
-read({prompt:'Qual é a URL do repositório GitHub:'}, function(error, githubURL){
+read({prompt: 'Qual é a URL do repositório GitHub:'}, function (error, githubURL) {
+    'use strict';
+
     if (error) {
         fail(error);
     }
 
-    var pack = githubURL.replace(/^.*\/(.*$)/,'$1');
+    var pack = githubURL.replace(/^.*\/(.*$)/, '$1'),
+        cmds = [
+            'echo "cd ~/.atom/packages"',
+            'cd ~/.atom/packages',
 
-    var cmds = [
-        'echo "cd ~/.atom/packages"',
-              'cd ~/.atom/packages',
+            'echo "git clone ' + githubURL + '"',
+            'git clone ' + githubURL,
 
-        'echo "git clone ' + githubURL + '"',
-              'git clone ' + githubURL,
+            'echo "cd ' + pack + '"',
+            'cd ' + pack,
 
-        'echo "cd ' + pack + '"',
-              'cd ' + pack,
+            'echo "npm install"',
+            'npm install'
+        ],
+        textDefault = 'S';
 
-        'echo "npm install"',
-              'npm install'
-    ];
+    process.stdout.write(('\nVai executar:\n'.inverse + cmds.join('\n') + '\n').green);
 
-    process.stdout.write( ('\nVai executar:\n'.inverse + cmds.join('\n') + '\n').green );
 
-    var textDefault = 'S';
-
-    read({prompt:'Confirma?', default: textDefault}, function(error, yes){
+    read({prompt: 'Confirma?', default: textDefault}, function (error, yes) {
         if (error) {
             fail(error);
         }
-        if (yes == textDefault || yes.toUpperCase() == 'S') {
+        if (yes === textDefault || yes.toUpperCase() === 'S') {
             var exec =  require('child_process').exec;
-            exec(cmds.join(' && '), function(error, stdout, stderr) {
+            exec(cmds.join(' && '), function (error, stdout, stderr) {
                 if (stdout) {
-                    process.stdout.write( ('\nSaída padrão:\n'.inverse + stdout).blue );
+                    process.stdout.write(('\nSaída padrão:\n'.inverse + stdout).blue);
                 }
 
                 if (stderr) {
-                    process.stderr.write( ('\nErro padrão:\n'.inverse + stderr).yellow );
+                    process.stderr.write(('\nErro padrão:\n'.inverse + stderr).yellow);
                 }
 
                 if (error !== null) {
