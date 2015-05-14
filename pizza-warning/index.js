@@ -11,11 +11,26 @@ var args = process.argv,
                 host: 'mail.icmbio.gov.br',
                 port: 25
             })),
+            mailBody = [
+                '<h1>Aviso importante!</h1>',
+                '<p>',
+                '    Por que você ainda não pagou a <b>PIZZA</b>?',
+                '</p>',
+                '<p>',
+                '    Trate de pagar logo suas dívidas para sua vida ficar melhor aqui na COTEC',
+                '</p>',
+                '<p>',
+                '    <br />',
+                '    Atenciosamente,',
+                '    <br />',
+                '    - Equipe que você fará parte assim que pagar a dita cuja.',
+                '</p>'
+            ],
             mailOptions = {
                 from: 'warning-pizza@icmbio.gov.br',
                 to: email,
-                subject: 'Eih, vc ainda não pagou a PIZZA' + new Date(),
-                html: '<h1>Aviso importante!</h1><p>Oh pessoa! Pq que ainda não pagastes a <b>PIZZA</b>?</p>'
+                subject: 'Eih, vc ainda não pagou a PIZZA…',
+                html: mailBody.join('')
             };
 
         transporter.sendMail(mailOptions, function (error, info) {
@@ -32,7 +47,9 @@ var args = process.argv,
 if (!email.length) {
     var read = require('read');
 
-    read({prompt: 'Informe o email:'}, function (error, email) {
+    read({
+        prompt: 'Informe o email:'
+    }, function (error, email) {
         'use strict';
 
         if (error) {
